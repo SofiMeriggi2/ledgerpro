@@ -1,0 +1,24 @@
+server:
+  port: 8080
+  error:
+    include-message: never
+    include-stacktrace: never
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/appdb 
+    username: postgres
+    password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: America/Argentina/Buenos_Aires 
+  flyway:
+    enabled: true
+
+jwt:
+  
+  secret: "+JhcVwjc//c54wExuDCOy85IgjXxx5GZvO45Ty57WLdKTppoLZkCW3IwkZQvGbmfWw5cnJVtv2GWWlz56nTZQg==" 
