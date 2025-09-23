@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface AccountRepository extends JpaRepository<Account, UUID> {
@@ -16,4 +17,6 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
 
   // 🔒 listar sólo las del dueño
   List<Account> findByOwnerIdOrderByCreatedAtDesc(UUID ownerId);
+
+  Optional<Account> findByIdAndOwnerId(UUID id, UUID ownerId);
 }

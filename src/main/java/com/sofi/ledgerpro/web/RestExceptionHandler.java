@@ -56,6 +56,18 @@ public class RestExceptionHandler {
         .body(Map.of("message", "JSON malformado"));
   }
 
+  @ExceptionHandler(IllegalArgumentException.class)
+  public ResponseEntity<Map<String, Object>> badRequest(IllegalArgumentException ex) {
+    return ResponseEntity.badRequest()
+        .body(Map.of("message", ex.getMessage()));
+  }
+
+  @ExceptionHandler(IllegalStateException.class)
+  public ResponseEntity<Map<String, Object>> illegalState(IllegalStateException ex) {
+    return ResponseEntity.status(HttpStatus.CONFLICT)
+        .body(Map.of("message", ex.getMessage()));
+  }
+
   @ExceptionHandler(Exception.class)
   public ResponseEntity<Map<String, Object>> unexpected(Exception ex) {
     log.error("Unexpected error", ex); // el detalle queda solo en logs del server
