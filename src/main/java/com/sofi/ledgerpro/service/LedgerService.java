@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -22,25 +24,45 @@ public class LedgerService {
     }
 
     @Transactional
-    public LedgerEntry addEntry(UUID accountId, BigDecimal amount, LedgerEntry.Kind kind) {
-        Account acc = accounts.findById(accountId).orElseThrow();
-        if (kind == LedgerEntry.Kind.DEBIT) {
-            acc.setBalance(acc.getBalance().subtract(amount));
-        } else {
-            acc.setBalance(acc.getBalance().add(amount));
+    public LedgerEntry addEntry(UUID ownerId, UUID accountId, BigDecimal amount, LedgerEntry.Kind kind) {
+        UUID owner = Objects.requireNonNull(ownerId, "El propietario es requerido");
+        UUID account = Objects.requireNonNull(accountId, "La cuenta es requerida");
+        if (amount == null || amount.signum() <= 0) {
+            throw new IllegalArgumentException("El monto debe ser mayor a cero");
         }
+        LedgerEntry.Kind entryKind = Objects.requireNonNull(kind, "El tipo de movimiento es requerido");
+
+        Account acc = accounts.findByIdAndOwnerId(account, owner)
+            .orElseThrow(NoSuchElementException::new);
+
+        BigDecimal newBalance = entryKind == LedgerEntry.Kind.CREDIT
+            ? acc.getBalance().add(amount)
+            : acc.getBalance().subtract(amount);
+
+        if (newBalance.signum() < 0) {
+            throw new IllegalStateException("Saldo insuficiente");
+        }
+
+        acc.setBalance(newBalance);
+
         LedgerEntry e = new LedgerEntry();
         e.setAccount(acc);
         e.setAmount(amount);
-        e.setKind(kind);
-        // el campo 'at' lo completa Postgres por defecto
-        accounts.save(acc);
+        e.setKind(entryKind);
+
         return entries.save(e);
     }
 
     @Transactional
-    public void transfer(UUID from, UUID to, BigDecimal amount) {
-        addEntry(from, amount, LedgerEntry.Kind.DEBIT);
-        addEntry(to, amount, LedgerEntry.Kind.CREDIT);
+    public void transfer(UUID ownerId, UUID from, UUID to, BigDecimal amount) {
+        UUID owner = Objects.requireNonNull(ownerId, "El propietario es requerido");
+        UUID origin = Objects.requireNonNull(from, "La cuenta origen es requerida");
+        UUID target = Objects.requireNonNull(to, "La cuenta destino es requerida");
+        if (origin.equals(target)) {
+            throw new IllegalArgumentException("Las cuentas deben ser distintas");
+        }
+
+        addEntry(owner, origin, amount, LedgerEntry.Kind.DEBIT);
+        addEntry(owner, target, amount, LedgerEntry.Kind.CREDIT);
     }
 }

@@ -16,6 +16,7 @@ import org.springframework.security.core.Authentication;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 
 import static com.sofi.ledgerpro.config.JwtAuthFilter.userId;
@@ -56,7 +57,14 @@ public class AccountController {
 
     Account a = new Account();
     a.setOwnerId(owner);
-    a.setName(req.name());
+    if (req.name() == null || req.name().isBlank()) {
+      throw new IllegalArgumentException("El nombre de la cuenta es requerido");
+    }
+    a.setName(req.name().trim());
+
+    if (req.initialBalance() != null && req.initialBalance().signum() < 0) {
+      throw new IllegalArgumentException("El saldo inicial no puede ser negativo");
+    }
     a.setBalance(req.initialBalance() == null ? BigDecimal.ZERO : req.initialBalance());
 
     var saved = accounts.save(a);
@@ -66,9 +74,12 @@ public class AccountController {
   // --- Movimientos ---------------------------------------------------------
 
   @GetMapping("/{id}/entries")
-  public Page<LedgerEntry> entries(@PathVariable("id") UUID id,
+  public Page<LedgerEntry> entries(Authentication auth,
+                                   @PathVariable("id") UUID id,
                                    @RequestParam(defaultValue = "0") int page,
                                    @RequestParam(defaultValue = "20") int size) {
+    UUID owner = userId(auth);
+    accounts.findByIdAndOwnerId(id, owner).orElseThrow(NoSuchElementException::new);
     if (page < 0) page = 0;
     if (size <= 0) size = 20;
     if (size > 100) size = 100;
@@ -79,17 +90,25 @@ public class AccountController {
 
   @PostMapping("/{id}/entries")
   @ResponseStatus(HttpStatus.CREATED)
-  public LedgerEntry addEntry(@PathVariable("id") UUID id,
+  public LedgerEntry addEntry(Authentication auth,
+                              @PathVariable("id") UUID id,
                               @RequestBody CreateEntryRequest req) {
-    var kind = LedgerEntry.Kind.valueOf(req.kind().toUpperCase());
-    return ledger.addEntry(id, req.amount(), kind);
+    LedgerEntry.Kind kind;
+    String rawKind = req.kind();
+    try {
+      kind = LedgerEntry.Kind.valueOf(rawKind == null ? null : rawKind.trim().toUpperCase());
+    } catch (RuntimeException ex) {
+      throw new IllegalArgumentException("Tipo de movimiento inválido");
+    }
+
+    return ledger.addEntry(userId(auth), id, req.amount(), kind);
   }
 
   // --- Transferencias ------------------------------------------------------
 
   @PostMapping("/transfer")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void transfer(@RequestBody TransferRequest req) {
-    ledger.transfer(req.from(), req.to(), req.amount());
+  public void transfer(Authentication auth, @RequestBody TransferRequest req) {
+    ledger.transfer(userId(auth), req.from(), req.to(), req.amount());
   }
 }
