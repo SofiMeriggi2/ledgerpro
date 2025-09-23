@@ -41,7 +41,7 @@ export function AddEntryForm({ accountId }: { accountId: UUID }) {
       </select>
 
       <button className="btn" disabled={add.isPending}>
-        {add.isPending ? 'Agregando...' : 'Agregar'}
+        {add.isPending ? 'Agregando…' : 'Agregar'}
       </button>
     </form>
   )

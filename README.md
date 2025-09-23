@@ -125,9 +125,9 @@ server: {
 
 Endpoints:
 
-POST /auth/signup – register a user
+POST /api/auth/signup – register a user
 
-POST /auth/login – returns a JWT
+POST /api/auth/login – returns a JWT
 
 The frontend stores the token and sends it as:
 
@@ -169,12 +169,12 @@ On 4xx/5xx, the backend hides internal stack traces and returns safe error paylo
 
 🧪 Quick cURL
 # signup
-curl -sX POST http://localhost:8080/auth/signup \
+curl -sX POST http://localhost:8080/api/auth/signup \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com","password":"secret"}'
 
 # login (capture token with jq)
-TOKEN=$(curl -sX POST http://localhost:8080/auth/login \
+TOKEN=$(curl -sX POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com","password":"secret"}' | jq -r .token)
 

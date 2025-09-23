@@ -8,7 +8,7 @@ export function AccountDetails({ id }: { id: UUID }) {
     queryFn: () => api.listEntries(id, 0, 20),
   })
 
-  if (isLoading) return <div className="card">Cargando movimientos...</div>
+  if (isLoading) return <div className="card">Cargando movimientos…</div>
   if (error) return <div className="card text-red-600">Error: {(error as Error).message}</div>
 
   return (
